@@ -119,11 +119,11 @@ maxim = 1
 x_0 = np.linspace(minim, maxim, num)
 x_f = np.zeros(num)
 
-# __, x_arr = simulated_annealing(x_0[0])
-# plot_x_vs_k(x_arr, 'simulated annealing')
-# for i in range(num):
-#     x_f[i], __ = simulated_annealing(x_0[i])
-# plot_results(x_0, x_f, 'simulated annealing')
+__, x_arr = simulated_annealing(x_0[0])
+plot_x_vs_k(x_arr, 'simulated annealing')
+for i in range(num):
+    x_f[i], __ = simulated_annealing(x_0[i])
+plot_results(x_0, x_f, 'simulated annealing')
 
 __, x_arr = newtons_method(x_0[32])
 plot_x_vs_k(x_arr, 'newtons method')

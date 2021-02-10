@@ -75,8 +75,8 @@ def traveling_salesman(init_cities, locs):
     T_log = np.log(T / T_min)
     divisor = (n - 3) / T_log
     while k < k_max and T > T_min:
-        if k % k_tenth == 0:
-            print('k = ', k)
+        # if k % k_tenth == 0:
+        #     print('k = ', k)
         operating_window = int(np.log(T / T_min) * divisor) + 3
         cities_cand = perturb_list(cities, operating_window, 'invert sublist')
         dist_cand = eval_distance(cities_cand, locs)
@@ -93,6 +93,45 @@ def traveling_salesman(init_cities, locs):
         dist_arr[k] = dist
     return cities, dist_arr
 
+
+def cost_hash(start, arr):
+    return str(start) + ':' + str(arr)
+
+
+class TSP:
+    def __init__(self, cities, locs):
+        # Algorithm taken from https://www.baeldung.com/cs/tsp-dynamic-programming
+
+        # Compute distances between each city
+        n = np.shape(cities)[0]
+        self.dist = np.zeros((n, n))
+        self.cost = []
+        for i in range(n):
+            for j in range(i + 1, n):
+                self.dist[i, j] = city_dist(locs[i], locs[j])
+                self.dist[j, i] = self.dist[i, j]
+        self.Visited = dict()
+        self.Cost = dict()
+
+    def compute_tsp(self, s, N):
+        if len(N) == 1:
+            self.Cost[cost_hash(s, N)] = [self.dist[s, N[0]], np.array([s, N[0]])]
+            return
+        else:
+            min_cost = [np.inf, [0]]
+            for i in N:
+                index = np.where(N == i)
+                new_list = np.delete(N, index)
+
+                if cost_hash(i, new_list) not in self.Cost:
+                    self.compute_tsp(i, new_list)
+
+                this_cost = self.Cost[cost_hash(i, new_list)][0] + self.dist[s, i]
+                if this_cost < min_cost[0]:
+                    min_cost = [this_cost, np.insert(N, 0, s)]
+
+                self.Cost[cost_hash(s, N)] = min_cost
+        return
 
 def plot_x_vs_k(x, name):
     plt.figure()
@@ -122,7 +161,7 @@ def plot_results(cities, locs):
     plt.pause(0.1)
 
 
-num = 50
+num = 100
 minim = -10
 maxim = 10
 cities = np.arange(num)
@@ -139,11 +178,15 @@ for i in range(num):
 # locs = np.array([[2, 0], [2, 1], [2, 2], [1, 2], [0, 2], [-1, 2], [-2, 2], [-2, 1],
 #                  [-2, 0], [-2, -1], [-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2], [2, -1]])
 # min = 16
+min_dist = [np.inf, [0]]
 
-print(eval_distance(cities, locs))
-plot_results(cities, locs)
-cities_solved, dist_results = traveling_salesman(cities, locs)
-plot_results(cities_solved, locs)
-plot_x_vs_k(dist_results, 'distance vs. k')
-print(eval_distance(cities_solved, locs))
-# input('Done?')
+for i in range(100):
+    print(i)
+    cities_solved, dist_results = traveling_salesman(cities, locs)
+    this_dist = eval_distance(cities_solved, locs)
+    print(this_dist)
+    print()
+    if this_dist < min_dist[0]:
+        min_dist = [this_dist, cities_solved]
+
+plot_results(min_dist[1], locs)
