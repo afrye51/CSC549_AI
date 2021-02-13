@@ -72,7 +72,7 @@ def fitness(indiv_1, items, max_weight):
         indices_index = int(indiv_1[i] % len(item_indices))
         item = items[item_indices[indices_index]]
         item_indices.pop(indices_index)
-        if weight + item[0] < max_weight:
+        if weight + item[0] <= max_weight:
             weight += item[0]
             cost += item[1]
         else:
@@ -115,7 +115,7 @@ def tournament(indices, fitness):
 # * delete half, generate 2 rounds of children
 #   delete 1/3, use 1 recombination to refill
 #   delete half, reproduce to 1.5x, delete all remaining parents
-def selection(individuals, items, max_weight, method='rank'):
+def selection(individuals, items, max_weight):
 
     fitness_arr = fitness_population(individuals, items, max_weight)
 
@@ -129,13 +129,43 @@ def selection(individuals, items, max_weight, method='rank'):
     return final_group
 
 
-def knapsack_evolution(individuals, items, max_weight, num_steps=200):
+def knapsack_evolution(individuals, items, max_weight, num_steps=1000):
     mean = np.zeros(num_steps)
     median = np.zeros(num_steps)
     std = np.zeros(num_steps)
     for step in range(num_steps):
         individuals = mutate_population(individuals)
         individuals = selection(individuals, items, max_weight)
+        fitness_arr = fitness_population(individuals, items, max_weight)
+        mean[step] = np.mean(fitness_arr)
+        median[step] = np.median(fitness_arr)
+        std[step] = np.std(fitness_arr)
+
+    plot_vs_steps(mean, median, std)
+    return individuals
+
+
+def selection_asexual(individuals, items, max_weight):
+
+    fitness_arr = fitness_population(individuals, items, max_weight)
+
+    individuals_indices = list(range(np.shape(individuals)[0]))
+    parent_indices = tournament(individuals_indices, fitness_arr)
+    parents = individuals[parent_indices]
+    parents_old = copy.deepcopy(parents)
+    children = mutate_population(parents)
+
+    final_group = np.concatenate((parents_old, children))
+    return final_group
+
+
+def knapsack_evolution_asexual(individuals, items, max_weight, num_steps=1000):
+    mean = np.zeros(num_steps)
+    median = np.zeros(num_steps)
+    std = np.zeros(num_steps)
+    for step in range(num_steps):
+        individuals = mutate_population(individuals)
+        individuals = selection_asexual(individuals, items, max_weight)
         fitness_arr = fitness_population(individuals, items, max_weight)
         mean[step] = np.mean(fitness_arr)
         median[step] = np.median(fitness_arr)
@@ -185,19 +215,37 @@ item_weight_max = 15
 item_cost_min = 1
 item_cost_max = 10
 
+# Randomly start individuals
 individuals = np.zeros((num_individuals, num_items))
 for i in range(num_individuals):
     for j in range(num_items):
         individuals[i, j] = np.random.randint(0, 10*num_items)
 
+# # Doctored testing
+# weight_sum = 0
+# items = np.zeros((num_items, 2))
+# ratio = 0.5
+# for i in range(num_items):
+#     if i / num_items < ratio:
+#         items[i, 0] = item_weight_min
+#     else:
+#         items[i, 0] = item_weight_max
+#     weight_sum += items[i, 0]
+#     items[i, 1] = item_cost_max
+# max_weight = item_weight_min * num_items * ratio
+# print(max_weight)
+# print('max cost = ', item_cost_max * num_items * ratio)
+
+# Random testing
 weight_sum = 0
 items = np.zeros((num_items, 2))
 for i in range(num_items):
     items[i, 0] = np.random.randint(item_weight_min, item_weight_max)
     weight_sum += items[i, 0]
     items[i, 1] = np.random.randint(item_cost_min, item_cost_max)
-max_weight = 0.05*weight_sum
+max_weight = 0.5*weight_sum
 
-evaluate_knapsack(individuals, items, max_weight)
+#evaluate_knapsack(individuals, items, max_weight)
+# soln = knapsack_evolution_asexual(individuals, items, max_weight)
 soln = knapsack_evolution(individuals, items, max_weight)
-evaluate_knapsack(soln, items, max_weight)
+#evaluate_knapsack(soln, items, max_weight)
